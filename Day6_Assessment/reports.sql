@@ -1,12 +1,6 @@
--- ============================================================
 -- Set 1 - Retail Sales Reporting
--- File: reports.sql   (MySQL 8)
--- Run section 0 first, then any query below.
--- ============================================================
 
--- ------------------------------------------------------------
--- 0. Schema and sample data
--- ------------------------------------------------------------
+
 CREATE DATABASE IF NOT EXISTS retail_db;
 USE retail_db;
 
@@ -92,7 +86,7 @@ INSERT INTO order_items (order_id, product_id, quantity, unit_price) VALUES
 (111,1,1,50000),
 (112,4,1,1500),(112,3,2,500);
 
--- Orders 104, 109 and 112 are intentionally left unpaid
+
 INSERT INTO payments VALUES
 (1,101,50000,'Card','2025-01-15'),
 (2,102,1000,'UPI','2025-01-20'),
@@ -104,9 +98,8 @@ INSERT INTO payments VALUES
 (8,110,700,'COD','2025-03-16'),
 (9,111,50000,'Card','2025-03-20');
 
--- ============================================================
--- Task 1: Reporting queries
--- ============================================================
+
+-- Task 1: 
 
 -- Q1. Top 5 products by revenue
 SELECT p.product_id,
@@ -120,8 +113,8 @@ LIMIT 5;
 
 -- Q2. Month-wise sales
 SELECT DATE_FORMAT(o.order_date, '%Y-%m') AS sales_month,
-       COUNT(DISTINCT o.order_id)          AS total_orders,
-       SUM(oi.quantity * oi.unit_price)    AS total_sales
+       COUNT(DISTINCT o.order_id) AS total_orders,
+       SUM(oi.quantity * oi.unit_price) AS total_sales
 FROM orders o
 JOIN order_items oi ON oi.order_id = o.order_id
 GROUP BY DATE_FORMAT(o.order_date, '%Y-%m')
@@ -130,7 +123,7 @@ ORDER BY sales_month;
 -- Q3. Customers with more than three orders (HAVING)
 SELECT c.customer_id,
        CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
-       COUNT(o.order_id)                      AS order_count
+       COUNT(o.order_id) AS order_count
 FROM customers c
 JOIN orders o ON o.customer_id = c.customer_id
 GROUP BY c.customer_id, c.first_name, c.last_name
@@ -138,13 +131,13 @@ HAVING COUNT(o.order_id) > 3;
 
 -- Q4. Average basket value per city
 SELECT t.city,
-       COUNT(*)                    AS orders,
+       COUNT(*) AS orders,
        ROUND(AVG(t.order_total),2) AS avg_basket_value
 FROM (
     SELECT o.order_id, c.city,
            SUM(oi.quantity * oi.unit_price) AS order_total
     FROM orders o
-    JOIN customers c    ON c.customer_id = o.customer_id
+    JOIN customers c ON c.customer_id = o.customer_id
     JOIN order_items oi ON oi.order_id   = o.order_id
     GROUP BY o.order_id, c.city
 ) t
@@ -155,9 +148,9 @@ ORDER BY avg_basket_value DESC;
 SELECT o.order_id,
        CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
        o.order_date,
-       SUM(oi.quantity * oi.unit_price)       AS amount_due
+       SUM(oi.quantity * oi.unit_price) AS amount_due
 FROM orders o
-JOIN customers c    ON c.customer_id = o.customer_id
+JOIN customers c ON c.customer_id = o.customer_id
 JOIN order_items oi ON oi.order_id   = o.order_id
 LEFT JOIN payments p ON p.order_id   = o.order_id
 WHERE p.payment_id IS NULL
@@ -176,7 +169,7 @@ WHERE o.order_id IS NULL;
 SELECT p.category,
        SUM(oi.quantity * oi.unit_price) AS category_revenue,
        ROUND(100 * SUM(oi.quantity * oi.unit_price) /
-             (SELECT SUM(quantity * unit_price) FROM order_items), 2) AS revenue_share_pct
+      (SELECT SUM(quantity * unit_price) FROM order_items), 2) AS revenue_share_pct
 FROM order_items oi
 JOIN products p ON p.product_id = oi.product_id
 GROUP BY p.category
@@ -184,7 +177,7 @@ ORDER BY category_revenue DESC;
 
 -- Q8. Day with the highest sales
 SELECT o.order_date,
-       COUNT(DISTINCT o.order_id)       AS orders,
+       COUNT(DISTINCT o.order_id) AS orders,
        SUM(oi.quantity * oi.unit_price) AS day_sales
 FROM orders o
 JOIN order_items oi ON oi.order_id = o.order_id
@@ -192,45 +185,37 @@ GROUP BY o.order_date
 ORDER BY day_sales DESC
 LIMIT 1;
 
--- ============================================================
--- Task 2: Functions
--- ============================================================
 
 -- Task 2. Customer-friendly output columns
-SELECT UPPER(CONCAT(c.first_name, ' ', c.last_name))     AS customer_name,
-       CONCAT('Order #', o.order_id)                     AS order_ref,
-       DATE_FORMAT(o.order_date, '%d %b %Y')             AS order_date_fmt,
-       DATEDIFF('2025-04-01', o.order_date)              AS days_since_order,
+SELECT UPPER(CONCAT(c.first_name, ' ', c.last_name)) AS customer_name,
+       CONCAT('Order #', o.order_id) AS order_ref,
+       DATE_FORMAT(o.order_date, '%d %b %Y') AS order_date_fmt,
+       DATEDIFF('2025-04-01', o.order_date) AS days_since_order,
        ROUND(SUM(oi.quantity * oi.unit_price) * 1.18, 2) AS total_with_gst
 FROM orders o
-JOIN customers c    ON c.customer_id = o.customer_id
+JOIN customers c ON c.customer_id = o.customer_id
 JOIN order_items oi ON oi.order_id   = o.order_id
 GROUP BY o.order_id, c.customer_id, c.first_name, c.last_name, o.order_date
 ORDER BY o.order_id
 LIMIT 5;
 
--- ============================================================
--- Task 3: NULL behaviour
--- ============================================================
 
 -- Task 3. NULL behaviour in COUNT, SUM and AVG
-SELECT COUNT(*)                          AS count_star,
-       COUNT(loyalty_points)             AS count_column,
-       SUM(loyalty_points)               AS sum_points,
-       AVG(loyalty_points)               AS avg_ignoring_null,
+SELECT COUNT(*) AS count_star,
+       COUNT(loyalty_points) AS count_column,
+       SUM(loyalty_points) AS sum_points,
+       AVG(loyalty_points) AS avg_ignoring_null,
        AVG(COALESCE(loyalty_points, 0))  AS avg_treating_null_as_zero
 FROM customers;
 
--- ============================================================
--- Task 4: WHERE vs HAVING
--- ============================================================
+
 
 -- Task 4. WHERE vs HAVING
 SELECT c.customer_id,
        CONCAT(c.first_name, ' ', c.last_name) AS customer_name,
-       COUNT(o.order_id)                      AS orders_since_feb
+       COUNT(o.order_id) AS orders_since_feb
 FROM customers c
 JOIN orders o ON o.customer_id = c.customer_id
-WHERE o.order_date >= '2025-02-01'      -- filters ROWS before grouping
+WHERE o.order_date >= '2025-02-01'      
 GROUP BY c.customer_id, c.first_name, c.last_name
-HAVING COUNT(o.order_id) >= 2;          -- filters GROUPS after aggregation
+HAVING COUNT(o.order_id) >= 2;          

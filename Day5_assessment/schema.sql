@@ -1,4 +1,4 @@
--- Set 2: Bank Branch Accounts  |  MySQL 8.0.16+ (CHECK constraints are enforced)
+
 DROP DATABASE IF EXISTS bank_branch;
 CREATE DATABASE bank_branch;
 USE bank_branch;
@@ -28,7 +28,7 @@ CREATE TABLE account (
     account_id     INT AUTO_INCREMENT PRIMARY KEY,
     account_number VARCHAR(12)   NOT NULL,
     account_type   VARCHAR(10)   NOT NULL,
-    rm_id          INT           NOT NULL,   -- branch is reachable via rm_id (avoids transitive dependency)
+    rm_id          INT           NOT NULL,   
     balance        DECIMAL(15,2) NOT NULL DEFAULT 0.00,
     opened_date    DATE          NOT NULL,
     CONSTRAINT uq_account_number UNIQUE (account_number),
@@ -37,7 +37,6 @@ CREATE TABLE account (
     CONSTRAINT fk_account_rm     FOREIGN KEY (rm_id) REFERENCES relationship_manager(rm_id)
 );
 
--- Composite key: supports joint accounts (many customers <-> many accounts)
 CREATE TABLE account_holder (
     account_id  INT NOT NULL,
     customer_id INT NOT NULL,
